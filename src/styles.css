@@ -1,0 +1,100 @@
+:root {
+  font-family: system-ui, sans-serif;
+  color-scheme: dark;
+}
+body {
+  margin: 0;
+  background: #1a1a1f;
+  color: #e8e8ee;
+}
+#app {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  border-bottom: 1px solid #333;
+  padding-bottom: 0.75rem;
+  margin-bottom: 1rem;
+}
+header h1 {
+  font-size: 1.2rem;
+  margin: 0;
+  flex: 1 1 auto;
+}
+nav button {
+  margin-left: 0.25rem;
+}
+nav button.active {
+  background: #4a6;
+  color: #fff;
+}
+button {
+  background: #2d2d36;
+  color: inherit;
+  border: 1px solid #555;
+  border-radius: 6px;
+  padding: 0.4rem 0.8rem;
+  cursor: pointer;
+}
+button:hover {
+  border-color: #888;
+}
+button.danger {
+  border-color: #a44;
+}
+.notice {
+  text-align: center;
+  margin-top: 4rem;
+}
+.error {
+  color: #f88;
+}
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0.5rem 0 1.5rem;
+}
+th,
+td {
+  text-align: left;
+  padding: 0.35rem 0.6rem;
+  border-bottom: 1px solid #333;
+}
+.badge {
+  background: #265;
+  border-radius: 4px;
+  padding: 0.1rem 0.4rem;
+  font-size: 0.8rem;
+}
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+.stat {
+  background: #232329;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 0.7rem;
+}
+.stat .label {
+  font-size: 0.75rem;
+  color: #aab;
+  text-transform: uppercase;
+}
+.stat .value {
+  font-size: 1.3rem;
+}
+.row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
