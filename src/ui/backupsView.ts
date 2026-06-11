@@ -21,6 +21,7 @@ import {
   writeFileText,
 } from '../fs/files';
 import { getState } from './state';
+import { escapeHtml } from './escape';
 
 interface SaveSource {
   id: string; // 'live:<name>' | 'game:<name>' | 'own:<name>'
@@ -73,19 +74,27 @@ async function restore(read: () => Promise<Uint8Array>): Promise<void> {
   const bytes = await read();
   openSave(bytes).close(); // validate before writing anything
   await writeFileBytes(savesDir, selectedSave, bytes);
+  const written = await readFileBytes(savesDir, selectedSave);
+  try {
+    openSave(written).close();
+  } catch (e) {
+    throw new Error(
+      `Restore wrote a file that failed to parse — your previous save is safe in ${BACKUP_DIR_NAME}/ (auto-pre-restore). ${String(e)}`,
+    );
+  }
 }
 
 function renderDiff(diff: SaveDiff): string {
   const props = diff.properties
     .map(
-      (p) => `<tr><td>${p.key}</td><td>${p.before ?? '—'}</td>
-        <td>${p.after ?? '—'}</td></tr>`,
+      (p) => `<tr><td>${escapeHtml(p.key)}</td><td>${p.before != null ? escapeHtml(String(p.before)) : '—'}</td>
+        <td>${p.after != null ? escapeHtml(String(p.after)) : '—'}</td></tr>`,
     )
     .join('');
   const cats = diff.cats
     .map(
       (c) => `<tr><td>${c.id}</td><td>${c.kind}</td>
-        <td>${c.kind === 'renamed' ? `${c.previousName} → ${c.name}` : c.name}</td></tr>`,
+        <td>${c.kind === 'renamed' ? `${escapeHtml(c.previousName ?? '')} → ${escapeHtml(c.name)}` : escapeHtml(c.name)}</td></tr>`,
     )
     .join('');
   return `
@@ -137,7 +146,7 @@ export async function renderBackupsView(
     })),
   ];
   const sourceOptions = sources
-    .map((s) => `<option value="${s.id}">${s.label}</option>`)
+    .map((s) => `<option value="${escapeHtml(s.id)}">${escapeHtml(s.label)}</option>`)
     .join('');
 
   view.innerHTML = `
@@ -155,12 +164,12 @@ export async function renderBackupsView(
         manifest.backups
           .map(
             (b) => `<tr>
-          <td>${b.label}</td>
+          <td>${escapeHtml(b.label)}</td>
           <td>${new Date(b.createdAt).toLocaleString()}</td>
           <td>${b.stats?.day ?? '?'}</td>
           <td>${b.stats?.gold ?? '?'}</td>
           <td>${b.stats?.catCount ?? '?'}</td>
-          <td><button class="danger restore-own" data-file="${b.fileName}">Restore</button></td>
+          <td><button class="danger restore-own" data-file="${escapeHtml(b.fileName)}">Restore</button></td>
         </tr>`,
           )
           .join('') || '<tr><td colspan="6">None yet</td></tr>'
@@ -174,9 +183,9 @@ export async function renderBackupsView(
         gameBackups
           .map(
             (b) => `<tr>
-          <td>${b.fileName}</td>
+          <td>${escapeHtml(b.fileName)}</td>
           <td>${b.timestamp.toLocaleString()}</td>
-          <td><button class="danger restore-game" data-file="${b.fileName}">Restore</button></td>
+          <td><button class="danger restore-game" data-file="${escapeHtml(b.fileName)}">Restore</button></td>
         </tr>`,
           )
           .join('') || '<tr><td colspan="3">None found</td></tr>'

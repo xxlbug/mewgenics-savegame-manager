@@ -21,7 +21,8 @@ function pad(n: number): string {
 function timestampPart(d: Date): string {
   return (
     `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` +
-    `_${pad(d.getHours())}-${pad(d.getMinutes())}-${pad(d.getSeconds())}`
+    `_${pad(d.getHours())}-${pad(d.getMinutes())}-${pad(d.getSeconds())}` +
+    `-${String(d.getMilliseconds()).padStart(3, '0')}`
   );
 }
 
@@ -35,18 +36,18 @@ export function makeBackupFileName(label: string, date: Date): string {
 }
 
 const FILE_PATTERN =
-  /^(.+)_(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})\.sav$/;
+  /^(.+)_(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})(?:-(\d{3}))?\.sav$/;
 
 export function parseOwnBackupFileName(
   fileName: string,
 ): Omit<OwnBackupEntry, 'stats'> | null {
   const m = FILE_PATTERN.exec(fileName);
   if (!m) return null;
-  const [, label, y, mo, d, h, mi, s] = m;
+  const [, label, y, mo, d, h, mi, s, ms] = m;
   return {
     fileName,
     label: label!,
-    createdAt: new Date(+y!, +mo! - 1, +d!, +h!, +mi!, +s!).toISOString(),
+    createdAt: new Date(+y!, +mo! - 1, +d!, +h!, +mi!, +s!, ms != null ? +ms : 0).toISOString(),
   };
 }
 

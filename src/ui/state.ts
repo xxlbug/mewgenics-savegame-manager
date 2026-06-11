@@ -16,3 +16,8 @@ export function getState(): AppState {
   if (!state) throw new Error('App state not initialized');
   return state;
 }
+
+export function setSelectedSave(name: string): void {
+  if (!state) throw new Error('App state not initialized');
+  state.selectedSave = name;
+}

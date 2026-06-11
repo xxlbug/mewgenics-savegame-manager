@@ -7,7 +7,7 @@ import {
   restoreSavesDirectory,
 } from './fs/directory';
 import { fileLastModified, listFileNames } from './fs/files';
-import { getState, setState } from './ui/state';
+import { getState, setState, setSelectedSave } from './ui/state';
 import { renderDashboard } from './ui/dashboard';
 import { renderCatsView } from './ui/catsView';
 import { renderBackupsView } from './ui/backupsView';
@@ -102,7 +102,7 @@ function renderShell(): void {
   document
     .getElementById('save-select')!
     .addEventListener('change', (e) => {
-      getState().selectedSave = (e.target as HTMLSelectElement).value;
+      setSelectedSave((e.target as HTMLSelectElement).value);
       void renderTab(currentTab);
     });
   for (const btn of app.querySelectorAll<HTMLButtonElement>('nav button')) {

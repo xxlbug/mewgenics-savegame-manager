@@ -8,20 +8,29 @@ import {
 
 describe('makeBackupFileName', () => {
   it('sanitizes the label and appends a timestamp', () => {
-    const d = new Date(2026, 5, 11, 16, 5, 30);
+    const d = new Date(2026, 5, 11, 16, 5, 30, 0);
     expect(makeBackupFileName('before risky run!', d)).toBe(
-      'before-risky-run_2026-06-11_16-05-30.sav',
+      'before-risky-run_2026-06-11_16-05-30-000.sav',
     );
   });
 });
 
 describe('parseOwnBackupFileName', () => {
-  it('recovers label and timestamp', () => {
+  it('recovers label and timestamp from old format (no ms) — backward compat', () => {
     const r = parseOwnBackupFileName('before-risky-run_2026-06-11_16-05-30.sav');
     expect(r).toEqual({
       fileName: 'before-risky-run_2026-06-11_16-05-30.sav',
       label: 'before-risky-run',
-      createdAt: new Date(2026, 5, 11, 16, 5, 30).toISOString(),
+      createdAt: new Date(2026, 5, 11, 16, 5, 30, 0).toISOString(),
+    });
+  });
+
+  it('recovers label and timestamp from new format (with ms)', () => {
+    const r = parseOwnBackupFileName('before-risky-run_2026-06-11_16-05-30-123.sav');
+    expect(r).toEqual({
+      fileName: 'before-risky-run_2026-06-11_16-05-30-123.sav',
+      label: 'before-risky-run',
+      createdAt: new Date(2026, 5, 11, 16, 5, 30, 123).toISOString(),
     });
   });
 

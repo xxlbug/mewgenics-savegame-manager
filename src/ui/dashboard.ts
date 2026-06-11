@@ -4,6 +4,7 @@ import { readAdventureParty } from '../save/adventure';
 import { readCats } from '../save/cats';
 import { readFileBytes } from '../fs/files';
 import { getState } from './state';
+import { escapeHtml } from './escape';
 
 function stat(label: string, value: string | number): string {
   return `<div class="stat"><div class="label">${label}</div>
@@ -28,16 +29,16 @@ export async function renderDashboard(view: HTMLElement): Promise<void> {
         ${stat('Gold', p.gold)}
         ${stat('Food', p.food)}
         ${stat('Blank collars', p.blankCollars)}
-        ${stat('Weather', p.weather || '—')}
+        ${stat('Weather', p.weather ? escapeHtml(p.weather) : '—')}
         ${stat('Storage upgrades', p.storageUpgrades)}
         ${stat('House boss in', `${p.houseBossCountdown} days`)}
-        ${stat('Next boss', p.nextHouseBoss || '—')}
+        ${stat('Next boss', p.nextHouseBoss ? escapeHtml(p.nextHouseBoss) : '—')}
       </div>
       <h2>Progress</h2>
       <div class="stat-grid">
         ${stat('Save completion', `${p.savePercent}%`)}
         ${stat('Total cats', cats.length)}
-        ${stat('Game version', p.versionString || '—')}
+        ${stat('Game version', p.versionString ? escapeHtml(p.versionString) : '—')}
       </div>
       <h2>Adventure</h2>
       <div class="stat-grid">
@@ -48,7 +49,7 @@ export async function renderDashboard(view: HTMLElement): Promise<void> {
       ${
         p.onAdventure && party.length
           ? `<p>Party: ${party
-              .map((n) => `<span class="badge">${n}</span>`)
+              .map((n) => `<span class="badge">${escapeHtml(n)}</span>`)
               .join(' ')}</p>`
           : ''
       }`;

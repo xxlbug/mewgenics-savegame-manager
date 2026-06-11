@@ -3,6 +3,7 @@ import { readCats } from '../save/cats';
 import { readAdventureParty } from '../save/adventure';
 import { readFileBytes } from '../fs/files';
 import { getState } from './state';
+import { escapeHtml } from './escape';
 
 export async function renderCatsView(view: HTMLElement): Promise<void> {
   const { savesDir, selectedSave } = getState();
@@ -26,7 +27,7 @@ export async function renderCatsView(view: HTMLElement): Promise<void> {
       tbody.innerHTML = cats
         .filter((c) => c.name.toLowerCase().includes(f))
         .map(
-          (c) => `<tr><td>${c.id}</td><td>${c.name}</td>
+          (c) => `<tr><td>${c.id}</td><td>${escapeHtml(c.name)}</td>
             <td>${party.has(c.id) ? '<span class="badge">on adventure</span>' : ''}</td></tr>`,
         )
         .join('');
