@@ -23,6 +23,19 @@ your machine.
 - Point it at your saves folder:
   `%APPDATA%\Glaiel Games\Mewgenics\<steam-id>\saves`
 
+### "Can't open this folder because it contains system files"
+
+Chrome refuses to grant folder access anywhere inside `AppData`. Workaround:
+create a directory junction outside AppData and select that instead. In
+`cmd.exe` (no admin required):
+
+```
+mklink /J "%USERPROFILE%\MewgenicsSaves" "%APPDATA%\Glaiel Games\Mewgenics\<steam-id>\saves"
+```
+
+Then select `C:\Users\<you>\MewgenicsSaves` in the app. All reads and writes
+pass through to the real saves folder.
+
 Reading stats works fine while the game is running. Restoring while the game
 runs is not reliable — the game will overwrite the file on its next save.
 

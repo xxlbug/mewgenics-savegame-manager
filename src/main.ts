@@ -40,7 +40,16 @@ function renderPicker(): void {
     <p>Select your Mewgenics <code>saves</code> folder. On Windows it is:</p>
     <p><code>%APPDATA%\\Glaiel Games\\Mewgenics\\&lt;steam-id&gt;\\saves</code></p>
     <button id="pick">Select saves folder</button>
-    <p id="pick-error" class="error"></p></div>`;
+    <p id="pick-error" class="error"></p>
+    <div class="hint">
+      <p><strong>"Can't open this folder because it contains system files"?</strong></p>
+      <p>Chrome blocks folder access inside <code>AppData</code>. Workaround:
+      create a junction outside AppData and select that instead. In
+      <code>cmd.exe</code> (no admin needed):</p>
+      <p><code>mklink /J "%USERPROFILE%\\MewgenicsSaves"
+      "%APPDATA%\\Glaiel Games\\Mewgenics\\&lt;steam-id&gt;\\saves"</code></p>
+      <p>Then select <code>C:\\Users\\&lt;you&gt;\\MewgenicsSaves</code> here.</p>
+    </div></div>`;
   document.getElementById('pick')!.addEventListener('click', async () => {
     try {
       const dir = await pickSavesDirectory();
