@@ -2,12 +2,15 @@ import './styles.css';
 import wasmUrl from 'sql.js/dist/sql-wasm.wasm?url';
 import { initSql } from './save/db';
 import {
-  isFileSystemAccessSupported,
+  detectSavesDirs,
+  forgetSavesDirectory,
   pickSavesDirectory,
+  rememberSavesDirectory,
   restoreSavesDirectory,
 } from './fs/directory';
 import { fileLastModified, listFileNames } from './fs/files';
 import { getState, setState, setSelectedSave } from './ui/state';
+import { escapeHtml } from './ui/escape';
 import { renderDashboard } from './ui/dashboard';
 import { renderCatsView } from './ui/catsView';
 import { renderBackupsView } from './ui/backupsView';
@@ -18,53 +21,72 @@ type Tab = 'dashboard' | 'cats' | 'backups';
 let currentTab: Tab = 'dashboard';
 
 async function main(): Promise<void> {
-  if (!isFileSystemAccessSupported()) {
-    app.innerHTML = `<div class="notice error">
-      <h1>Browser not supported</h1>
-      <p>This tool needs the File System Access API.
-      Please use Chrome or Edge.</p></div>`;
+  await initSql(() => wasmUrl);
+  const remembered = await restoreSavesDirectory();
+  if (remembered) {
+    await enterApp(remembered);
     return;
   }
-  await initSql(() => wasmUrl);
-  const restored = await restoreSavesDirectory();
-  if (restored) {
-    await enterApp(restored);
+  const detected = await detectSavesDirs();
+  if (detected.length === 1) {
+    await enterApp(detected[0]!);
+  } else if (detected.length > 1) {
+    renderChooser(detected);
   } else {
-    renderPicker();
+    renderPicker(
+      'No Mewgenics saves folder found automatically. Select it manually:',
+    );
   }
 }
 
-function renderPicker(): void {
+function renderChooser(dirs: string[]): void {
   app.innerHTML = `<div class="notice">
     <h1>Mewgenics Savegame Manager</h1>
-    <p>Select your Mewgenics <code>saves</code> folder. On Windows it is:</p>
+    <p>Multiple save locations found — pick one:</p>
+    <div id="dir-list"></div></div>`;
+  const list = document.getElementById('dir-list')!;
+  for (const dir of dirs) {
+    const btn = document.createElement('button');
+    btn.textContent = dir;
+    btn.style.display = 'block';
+    btn.style.margin = '0.5rem auto';
+    btn.addEventListener('click', () => void enterApp(dir));
+    list.appendChild(btn);
+  }
+}
+
+function renderPicker(message: string): void {
+  app.innerHTML = `<div class="notice">
+    <h1>Mewgenics Savegame Manager</h1>
+    <p>${escapeHtml(message)}</p>
     <p><code>%APPDATA%\\Glaiel Games\\Mewgenics\\&lt;steam-id&gt;\\saves</code></p>
     <button id="pick">Select saves folder</button>
     <p id="pick-error" class="error"></p></div>`;
   document.getElementById('pick')!.addEventListener('click', async () => {
     try {
       const dir = await pickSavesDirectory();
-      await enterApp(dir);
+      if (dir) await enterApp(dir);
     } catch (e) {
-      if ((e as DOMException).name !== 'AbortError') {
-        document.getElementById('pick-error')!.textContent = String(e);
-      }
+      document.getElementById('pick-error')!.textContent = String(e);
     }
   });
 }
 
-async function enterApp(dir: FileSystemDirectoryHandle): Promise<void> {
-  const names = (await listFileNames(dir)).filter((n) => n.endsWith('.sav'));
-  if (names.length === 0) {
-    app.innerHTML = `<div class="notice error">
-      <p>No .sav files found in the selected folder.</p>
-      <button id="repick">Pick another folder</button></div>`;
-    document
-      .getElementById('repick')!
-      .addEventListener('click', () => renderPicker());
+async function enterApp(dir: string): Promise<void> {
+  let names: string[];
+  try {
+    names = (await listFileNames(dir)).filter((n) => n.endsWith('.sav'));
+  } catch (e) {
+    forgetSavesDirectory();
+    renderPicker(`Could not read folder (${String(e)}). Select it manually:`);
     return;
   }
-  // Default to the most recently modified save.
+  if (names.length === 0) {
+    forgetSavesDirectory();
+    renderPicker('No .sav files found in that folder. Select the saves folder:');
+    return;
+  }
+  rememberSavesDirectory(dir);
   const withTimes = await Promise.all(
     names.map(async (n) => [n, await fileLastModified(dir, n)] as const),
   );
@@ -96,6 +118,7 @@ function renderShell(): void {
         <button data-tab="dashboard">Dashboard</button>
         <button data-tab="cats">Cats</button>
         <button data-tab="backups">Backups</button>
+        <button id="change-folder" title="Change saves folder">📁</button>
       </nav>
     </header>
     <main id="view"></main>`;
@@ -105,17 +128,21 @@ function renderShell(): void {
       setSelectedSave((e.target as HTMLSelectElement).value);
       void renderTab(currentTab);
     });
-  for (const btn of app.querySelectorAll<HTMLButtonElement>('nav button')) {
+  for (const btn of app.querySelectorAll<HTMLButtonElement>('nav button[data-tab]')) {
     btn.addEventListener('click', () => {
       void renderTab(btn.dataset.tab as Tab);
     });
   }
+  document.getElementById('change-folder')!.addEventListener('click', () => {
+    forgetSavesDirectory();
+    void main();
+  });
   void renderTab(currentTab);
 }
 
 async function renderTab(tab: Tab): Promise<void> {
   currentTab = tab;
-  for (const btn of app.querySelectorAll<HTMLButtonElement>('nav button')) {
+  for (const btn of app.querySelectorAll<HTMLButtonElement>('nav button[data-tab]')) {
     btn.classList.toggle('active', btn.dataset.tab === tab);
   }
   const view = document.getElementById('view')!;
