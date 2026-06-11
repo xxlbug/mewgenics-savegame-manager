@@ -21,12 +21,15 @@ jobs:
         with:
           workspaces: src-tauri
       - run: npm ci
-      - uses: tauri-apps/tauri-action@v0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - run: npm run tauri build
+      - name: Rename portable exe
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem "src-tauri/target/release/*.exe" | Select-Object -First 1
+          Copy-Item $exe.FullName "Mewgenics-Savegame-Manager_${{ github.ref_name }}_portable.exe"
+      - name: Create release
+        uses: softprops/action-gh-release@v2
         with:
-          tagName: ${{ github.ref_name }}
-          releaseName: 'Mewgenics Savegame Manager ${{ github.ref_name }}'
-          releaseBody: 'See README for usage. Windows installer below.'
-          releaseDraft: false
-          prerelease: false
+          files: Mewgenics-Savegame-Manager_*_portable.exe
+          name: 'Mewgenics Savegame Manager ${{ github.ref_name }}'
+          body: 'Portable Windows exe — no installation, just run it. Requires the WebView2 runtime (preinstalled on Windows 10/11).'
