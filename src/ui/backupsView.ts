@@ -29,9 +29,7 @@ interface SaveSource {
   read: () => Promise<Uint8Array>;
 }
 
-async function loadManifest(
-  backupDir: FileSystemDirectoryHandle,
-): Promise<Manifest> {
+async function loadManifest(backupDir: string): Promise<Manifest> {
   try {
     return parseManifest(await readFileText(backupDir, MANIFEST_NAME));
   } catch {
@@ -40,10 +38,7 @@ async function loadManifest(
   }
 }
 
-async function saveManifest(
-  backupDir: FileSystemDirectoryHandle,
-  manifest: Manifest,
-): Promise<void> {
+async function saveManifest(backupDir: string, manifest: Manifest): Promise<void> {
   await writeFileText(backupDir, MANIFEST_NAME, JSON.stringify(manifest, null, 2));
 }
 

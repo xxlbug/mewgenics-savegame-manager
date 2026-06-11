@@ -1,5 +1,5 @@
 export interface AppState {
-  savesDir: FileSystemDirectoryHandle;
+  savesDir: string;
   /** Names of *.sav files in the saves folder root. */
   saveFiles: string[];
   /** Currently selected live save filename. */

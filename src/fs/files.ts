@@ -1,73 +1,67 @@
-export async function readFileBytes(
-  dir: FileSystemDirectoryHandle,
-  name: string,
-): Promise<Uint8Array> {
-  const fh = await dir.getFileHandle(name);
-  const file = await fh.getFile();
-  return new Uint8Array(await file.arrayBuffer());
+import { invoke } from '@tauri-apps/api/core';
+
+export interface FileInfo {
+  name: string;
+  modifiedMs: number;
 }
 
-/** Full-file atomic write: changes only become visible on close(). */
-export async function writeFileBytes(
-  dir: FileSystemDirectoryHandle,
-  name: string,
-  bytes: Uint8Array,
-): Promise<void> {
-  const fh = await dir.getFileHandle(name, { create: true });
-  const writable = await fh.createWritable();
-  // Blob respects the view's byteOffset/length, unlike passing bytes.buffer,
-  // and sidesteps the ArrayBufferLike vs ArrayBuffer typing mismatch.
-  await writable.write(new Blob([bytes as BlobPart]));
-  await writable.close();
+function joinPath(dir: string, name: string): string {
+  return `${dir.replace(/[\\/]+$/, '')}/${name}`;
 }
 
-export async function writeFileText(
-  dir: FileSystemDirectoryHandle,
-  name: string,
-  text: string,
-): Promise<void> {
+export function bytesToBase64(bytes: Uint8Array): string {
+  let bin = '';
+  const CHUNK = 0x8000;
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    bin += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+  }
+  return btoa(bin);
+}
+
+export function base64ToBytes(b64: string): Uint8Array {
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
+}
+
+export async function readFileBytes(dir: string, name: string): Promise<Uint8Array> {
+  return base64ToBytes(await invoke<string>('read_file', { path: joinPath(dir, name) }));
+}
+
+export async function writeFileBytes(dir: string, name: string, bytes: Uint8Array): Promise<void> {
+  await invoke('write_file', { path: joinPath(dir, name), dataB64: bytesToBase64(bytes) });
+}
+
+export async function writeFileText(dir: string, name: string, text: string): Promise<void> {
   await writeFileBytes(dir, name, new TextEncoder().encode(text));
 }
 
-export async function readFileText(
-  dir: FileSystemDirectoryHandle,
-  name: string,
-): Promise<string> {
+export async function readFileText(dir: string, name: string): Promise<string> {
   return new TextDecoder().decode(await readFileBytes(dir, name));
 }
 
-export async function listFileNames(
-  dir: FileSystemDirectoryHandle,
-): Promise<string[]> {
-  const names: string[] = [];
-  for await (const [name, handle] of dir.entries()) {
-    if (handle.kind === 'file') names.push(name);
-  }
-  return names;
+export async function listFiles(dir: string): Promise<FileInfo[]> {
+  return invoke<FileInfo[]>('list_files', { dir });
 }
 
-export async function getOrCreateDir(
-  parent: FileSystemDirectoryHandle,
-  name: string,
-): Promise<FileSystemDirectoryHandle> {
-  return parent.getDirectoryHandle(name, { create: true });
+export async function listFileNames(dir: string): Promise<string[]> {
+  return (await listFiles(dir)).map((f) => f.name);
 }
 
-export async function getDirIfExists(
-  parent: FileSystemDirectoryHandle,
-  name: string,
-): Promise<FileSystemDirectoryHandle | null> {
-  try {
-    return await parent.getDirectoryHandle(name);
-  } catch {
-    return null;
-  }
+export async function getOrCreateDir(parent: string, name: string): Promise<string> {
+  const path = joinPath(parent, name);
+  await invoke('create_dir', { path });
+  return path;
 }
 
-export async function fileLastModified(
-  dir: FileSystemDirectoryHandle,
-  name: string,
-): Promise<number> {
-  const fh = await dir.getFileHandle(name);
-  return (await fh.getFile()).lastModified;
+export async function getDirIfExists(parent: string, name: string): Promise<string | null> {
+  const path = joinPath(parent, name);
+  return (await invoke<boolean>('path_exists', { path })) ? path : null;
+}
+
+export async function fileLastModified(dir: string, name: string): Promise<number> {
+  const files = await listFiles(dir);
+  const f = files.find((x) => x.name === name);
+  return f?.modifiedMs ?? 0;
 }
