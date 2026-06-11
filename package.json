@@ -1,0 +1,24 @@
+{
+  "name": "mewgenics-savegame-manager",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "idb-keyval": "^6.2.5",
+    "sql.js": "^1.14.1"
+  },
+  "devDependencies": {
+    "@types/sql.js": "^1.4.11",
+    "@types/wicg-file-system-access": "^2023.10.7",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.16",
+    "vitest": "^4.1.8"
+  }
+}
