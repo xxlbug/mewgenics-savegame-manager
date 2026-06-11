@@ -1,4 +1,7 @@
 import { openSave } from '../save/db';
+import { readProperties } from '../save/properties';
+import { readCats } from '../save/cats';
+import { readAdventureParty } from '../save/adventure';
 import { summarize } from '../save/summary';
 import { diffSaves, type SaveDiff } from '../save/diff';
 import { parseBackupFileName, type GameBackup } from '../backups/gameBackups';
@@ -107,6 +110,39 @@ export async function renderBackupsView(
 ): Promise<void> {
   const { savesDir, selectedSave } = getState();
 
+  // Identification header for the currently selected save
+  const liveBytes = await readFileBytes(savesDir, selectedSave);
+  const liveDb = openSave(liveBytes);
+  let headerHtml: string;
+  try {
+    const p = readProperties(liveDb);
+    const cats = readCats(liveDb);
+    const partyIds = readAdventureParty(liveDb);
+    const byId = new Map(cats.map((c) => [c.id, c.name]));
+    const party = partyIds.map((id) => byId.get(id) ?? `Cat #${id}`);
+    headerHtml = `
+    <section class="current-save">
+      <h2>${escapeHtml(selectedSave)}</h2>
+      <div class="summary-row">
+        <span class="chip">Day ${p.currentDay}</span>
+        <span class="chip">${p.gold} gold</span>
+        <span class="chip">${p.food} food</span>
+        <span class="chip">${cats.length} cats</span>
+        <span class="chip">${p.savePercent}% complete</span>
+        <span class="chip">${escapeHtml(p.weather || '—')}</span>
+        ${
+          p.onAdventure
+            ? `<span class="chip adventure">On adventure: ${party
+                .map((n) => escapeHtml(n))
+                .join(', ')}</span>`
+            : '<span class="chip">At home</span>'
+        }
+      </div>
+    </section>`;
+  } finally {
+    liveDb.close();
+  }
+
   const gameBackupDir = await getDirIfExists(savesDir, 'backups');
   const gameBackups: GameBackup[] = [];
   if (gameBackupDir) {
@@ -144,7 +180,7 @@ export async function renderBackupsView(
     .map((s) => `<option value="${escapeHtml(s.id)}">${escapeHtml(s.label)}</option>`)
     .join('');
 
-  view.innerHTML = `
+  view.innerHTML = headerHtml + `
     <h2>Create backup</h2>
     <div class="row">
       <input id="backup-label" placeholder="Label, e.g. before-risky-run" />

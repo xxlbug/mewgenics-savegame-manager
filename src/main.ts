@@ -11,14 +11,13 @@ import {
 import { fileLastModified, listFileNames } from './fs/files';
 import { getState, setState, setSelectedSave } from './ui/state';
 import { escapeHtml } from './ui/escape';
-import { renderDashboard } from './ui/dashboard';
 import { renderCatsView } from './ui/catsView';
 import { renderBackupsView } from './ui/backupsView';
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
 
-type Tab = 'dashboard' | 'cats' | 'backups';
-let currentTab: Tab = 'dashboard';
+type Tab = 'backups' | 'cats';
+let currentTab: Tab = 'backups';
 
 async function main(): Promise<void> {
   await initSql(() => wasmUrl);
@@ -115,9 +114,8 @@ function renderShell(): void {
         </select>
       </label>
       <nav>
-        <button data-tab="dashboard">Dashboard</button>
-        <button data-tab="cats">Cats</button>
         <button data-tab="backups">Backups</button>
+        <button data-tab="cats">Cats</button>
         <button id="change-folder" title="Change saves folder">📁</button>
       </nav>
     </header>
@@ -148,8 +146,7 @@ async function renderTab(tab: Tab): Promise<void> {
   const view = document.getElementById('view')!;
   view.innerHTML = '<p>Loading…</p>';
   try {
-    if (tab === 'dashboard') await renderDashboard(view);
-    else if (tab === 'cats') await renderCatsView(view);
+    if (tab === 'cats') await renderCatsView(view);
     else await renderBackupsView(view, () => renderTab('backups'));
   } catch (e) {
     view.innerHTML = `<p class="error">Failed to read save: ${String(e)}</p>`;
