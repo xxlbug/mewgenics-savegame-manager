@@ -15,10 +15,9 @@ export async function writeFileBytes(
 ): Promise<void> {
   const fh = await dir.getFileHandle(name, { create: true });
   const writable = await fh.createWritable();
-  // Uint8Array.buffer is typed as ArrayBufferLike (may be SharedArrayBuffer),
-  // but FileSystemWritableFileStream.write() only accepts ArrayBuffer.
-  // In practice this is always a plain ArrayBuffer; the cast is safe.
-  await writable.write(bytes.buffer as ArrayBuffer);
+  // Blob respects the view's byteOffset/length, unlike passing bytes.buffer,
+  // and sidesteps the ArrayBufferLike vs ArrayBuffer typing mismatch.
+  await writable.write(new Blob([bytes as BlobPart]));
   await writable.close();
 }
 
